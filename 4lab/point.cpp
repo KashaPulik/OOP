@@ -22,7 +22,7 @@ private:
     sf::VertexArray point;
 
 public:
-    tPoint()
+    tPoint() : x(0), y(0), dx(0), dy(0), color(sf::Color(255, 255, 255))
     {
         point.setPrimitiveType(sf::Points);
         point.resize(1);
@@ -96,11 +96,11 @@ public:
 
 class tShape : public tPoint
 {
-private:
-    tPoint *points;
+protected:
+    size_t n_points;
+    std::vector<tPoint> points;
     sf::VertexArray shape;
     sf::Color color;
-    size_t n_points;
     float dx;
     float dy;
     float r_angle;
@@ -108,7 +108,7 @@ private:
 public:
     tShape()
     {
-        points = NULL;
+        // points = NULL;
         n_points = 0;
         shape.setPrimitiveType(sf::LinesStrip);
         color = sf::Color(255, 255, 255);
@@ -118,7 +118,8 @@ public:
     }
     tShape(size_t init_n_points) : n_points(init_n_points)
     {
-        points = new tPoint[n_points];
+        // points = new tPoint[n_points];
+        points.resize(n_points);
         if (n_points == 2)
             shape.setPrimitiveType(sf::Lines);
         else
@@ -129,9 +130,23 @@ public:
         r_angle = 0;
         shape.resize(n_points);
     }
-    ~tShape()
+    // ~tShape()
+    // {
+    //     delete[] points;
+    // }
+    void set_n_points(size_t new_n_points)
     {
-        delete[] points;
+        shape.resize(new_n_points);
+        n_points = new_n_points;
+        points.resize(n_points);
+    }
+    size_t get_n_points()
+    {
+        return n_points;
+    }
+    void resize_points(size_t n_points)
+    {
+        points.resize(n_points);
     }
     void set_shape_point(size_t index, float new_x, float new_y)
     {
@@ -281,25 +296,18 @@ public:
 
 class tLine : public tShape
 {
-private:
-    tShape line;
-
 public:
     tLine() : tShape(2){}
 };
 
 class tTriangle : public tShape
 {
-private:
-    tShape triange;
 public:
     tTriangle() : tShape(4){}
 };
 
 class tRectangle : public tShape
 {
-private:
-    tShape rectangle;
 public:
     tRectangle() : tShape(5)
     {
@@ -315,6 +323,51 @@ public:
     {
         set_shape_point(2, get_point_x(2), get_point_y(2) + length);
         set_shape_point(3, get_point_x(3), get_point_y(3) + length);
+    }
+};
+
+class tCircle : public tShape{
+private:
+    float radius;
+    float arc;
+public:
+    tCircle() : tShape(), radius(0), arc(0){}
+    tCircle(float init_radius) : tShape((size_t) (init_radius * 2 + 1)), radius(init_radius), arc(360.f / init_radius * 2)
+    {
+        float arc_for_each = arc;
+        for(size_t i = 0; i < get_n_points(); i++)
+        {
+            set_shape_point(i, radius, 0);
+            float angle = arc_for_each * (M_PI / 180.f);
+            sf::Vector2f cur_point = sf::Vector2f(get_point_x(i), get_point_y(i));
+            cur_point = rotatePoint(cur_point, angle);
+            set_shape_point(i, cur_point.x, cur_point.y);
+            arc_for_each += arc;
+        }
+        set_shape_position(get_point_x(0) + radius, get_point_y(0) + radius);
+    }
+    void calculate_points_position()
+    {
+        float arc_for_each = arc;
+        sf::Vector2f center = sf::Vector2f(get_point_x(0) + radius, get_point_y(0) + radius);
+        for(size_t i = 0; i < get_n_points(); i++)
+        {
+            float angle = arc_for_each * (M_PI / 180.f);
+            sf::Vector2f cur_point = sf::Vector2f(get_point_x(i), get_point_y(i));
+            cur_point -= center;
+            cur_point = rotatePoint(cur_point, angle);
+            set_shape_point(i, cur_point.x + radius, cur_point.y + radius);
+            arc_for_each += arc;
+        }
+        set_shape_position(get_point_x(0) + radius, get_point_y(0) + radius);
+    }
+    void set_radius(float new_radius)
+    {
+        radius = new_radius;
+        n_points = (size_t) radius * 8 + 1;
+        set_n_points(n_points);
+        arc = 360.f / (n_points - 1);
+        calculate_points_position();
     }
 };
 
@@ -438,19 +491,59 @@ public:
 //     return 0;
 // }
 
+// int main()
+// {
+//     srand(time(0));
+//     int n_shapes = 10;
+//     // tLine lines[n_lines];
+//     std::vector<tRectangle> lines(n_shapes);
+//     for (int i = 0; i < n_shapes; i++)
+//     {
+//         lines[i].set_x_length(rand() % (x_size / 2));
+//         lines[i].set_y_length(rand() % (x_size / 2));
+//         lines[i].set_shape_position(15, 15);
+//         lines[i].set_shape_color(sf::Color(rand() % 256, rand() % 256, rand() % 256));
+//         lines[i].set_shape_move(rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1), rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1));
+//         lines[i].set_shape_rotation(0.5);
+//     }
+//     sf::RenderWindow window(sf::VideoMode(x_size, y_size), "ABOBA");
+//     window.setPosition(sf::Vector2i(300, 300));
+//     window.setFramerateLimit(60);
+
+//     while (window.isOpen())
+//     {
+//         sf::Event event;
+//         while (window.pollEvent(event))
+//         {
+//             if (event.type == sf::Event::Closed)
+//                 window.close();
+//         }
+//         window.clear();
+//         for (int i = 0; i < n_shapes; i++)
+//         {
+//             lines[i].solve_rotate_collision(x_size, y_size);
+//             lines[i].rotate_shape();
+//             lines[i].solve_shape_collision(x_size, y_size);
+//             lines[i].move_shape();
+//             window.draw(lines[i].get_shape_object());
+//         }
+//         window.display();
+//     }
+//     return 0;
+// }
+
 int main()
 {
     srand(time(0));
     int n_shapes = 10;
     // tLine lines[n_lines];
-    std::vector<tRectangle> lines(n_shapes);
+    std::vector<tCircle> lines(n_shapes);
     for (int i = 0; i < n_shapes; i++)
     {
-        lines[i].set_x_length(rand() % (x_size / 2));
-        lines[i].set_y_length(rand() % (x_size / 2));
-        lines[i].set_shape_position(15, 15);
+        lines[i].set_radius(rand() % (x_size / 8));
+        // lines[i].set_shape_position(150, 150);
         lines[i].set_shape_color(sf::Color(rand() % 256, rand() % 256, rand() % 256));
-        lines[i].set_shape_move(rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1), rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1));
+        lines[i].set_shape_move(rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1), rand() % 3 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1));
         lines[i].set_shape_rotation(0.5);
     }
     sf::RenderWindow window(sf::VideoMode(x_size, y_size), "ABOBA");
@@ -468,8 +561,8 @@ int main()
         window.clear();
         for (int i = 0; i < n_shapes; i++)
         {
-            lines[i].solve_rotate_collision(x_size, y_size);
-            lines[i].rotate_shape();
+            // lines[i].solve_rotate_collision(x_size, y_size);
+            // lines[i].rotate_shape();
             lines[i].solve_shape_collision(x_size, y_size);
             lines[i].move_shape();
             window.draw(lines[i].get_shape_object());
