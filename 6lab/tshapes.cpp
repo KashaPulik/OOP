@@ -9,9 +9,9 @@
 //                         |
 //                      tShape
 //                         |
-//        -------------------------------------
-//        |         |            |            |
-//      tLine    tTriangle   tRectangle   tEllipse
+//        -----------------------------------------------
+//        |         |            |            |         |
+//      tLine    tTriangle   tRectangle   tEllipse    tRhomb
 //                                            |
 //                                         tCircle
 
@@ -37,20 +37,24 @@ public:
         point.setPrimitiveType(sf::Points);
         point.resize(1);
     }
-    void setxy(float new_x, float new_y)
+    virtual void set_xy(float new_x, float new_y)
     {
         x = new_x;
         y = new_y;
         point[0].position = sf::Vector2f(x, y);
     }
-    void setmove(float new_dx, float new_dy)
+    virtual void set_move(float new_dx, float new_dy)
     {
         dx = new_dx;
         dy = new_dy;
     }
-    void setcolor(sf::Color new_color)
+    virtual void set_color(sf::Color new_color)
     {
         point[0].color = new_color;
+    }
+    virtual sf::Color get_color()
+    {
+        return color;
     }
     float get_x()
     {
@@ -70,35 +74,48 @@ public:
     }
     void rand_init(int x_size, int y_size)
     {
-        setxy(rand() % x_size, rand() % y_size);
-        setmove(rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1), rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1));
-        setcolor(sf::Color(rand() % 256, rand() % 256, rand() % 256));
+        set_xy(rand() % x_size, rand() % y_size);
+        set_move(rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1), rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1));
+        set_color(sf::Color(rand() % 256, rand() % 256, rand() % 256));
     }
-    bool solve_collision(int x_size, int y_size)
+    virtual bool solve_collision(int x_size, int y_size)
     {
         bool collision = 0;
         if (x + dx > x_size || x + dx < 0)
         {
             collision = 1;
-            setmove(-dx, dy);
+            set_move(-dx, dy);
         }
         if (y + dy > y_size || y + dy < 0)
         {
             collision = 1;
-            setmove(dx, -dy);
+            set_move(dx, -dy);
         }
         return collision;
     }
-    void move_point()
+    virtual void move()
     {
-        setxy(x + dx, y + dy);
+        set_xy(x + dx, y + dy);
     }
     void random_set_move()
     {
         dx = rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1);
         dy = rand() % 2 == 0 ? rand() % 2 + 1 : -(rand() % 2 + 1);
     }
-    sf::VertexArray get_object()
+    sf::Vector2f rotate_point(const sf::Vector2f &point, const sf::Vector2f &center, float angle)
+    {
+        angle = angle * (M_PI / 180.f);
+        float s = sin(angle);
+        float c = cos(angle);
+
+        sf::Vector2f translated = point - center;
+
+        float xnew = translated.x * c - translated.y * s;
+        float ynew = translated.x * s + translated.y * c;
+
+        return sf::Vector2f(xnew + center.x, ynew + center.y);
+    }
+    virtual sf::VertexArray get_object()
     {
         return point;
     }
@@ -156,7 +173,7 @@ public:
     {
         if (index > n_points)
             return;
-        points[index].setxy(new_x, new_y);
+        points[index].set_xy(new_x, new_y);
         shape[index].position = sf::Vector2f(new_x, new_y);
         if (index == 0 && n_points != 2)
         {
@@ -164,7 +181,7 @@ public:
             shape[n_points - 1] = shape[0];
         }
     }
-    void set_shape_position(float new_x, float new_y)
+    virtual void set_xy(float new_x, float new_y) override
     {
         size_t cicle_n_points = n_points == 2 ? n_points : n_points - 1;
         float dxpos = new_x - points[0].get_x();
@@ -176,16 +193,16 @@ public:
             set_shape_point(i, new_x_for_each, new_y_for_each);
         }
     }
-    void set_shape_move(float new_dx, float new_dy)
+    void set_move(float new_dx, float new_dy) override
     {
         for (size_t i = 0; i < n_points; i++)
         {
-            points[i].setmove(new_dx, new_dy);
+            points[i].set_move(new_dx, new_dy);
         }
         dx = new_dx;
         dy = new_dy;
     }
-    void set_shape_color(sf::Color new_color)
+    void set_color(sf::Color new_color) override
     {
         for (size_t i = 0; i < n_points; i++)
         {
@@ -193,11 +210,11 @@ public:
         }
         color = new_color;
     }
-    void set_shape_rotation(float new_r_angle)
+    void set_r_angle(float new_r_angle)
     {
         r_angle = new_r_angle;
     }
-    sf::Color get_shape_color()
+    sf::Color get_color() override
     {
         return color;
     }
@@ -213,33 +230,21 @@ public:
     {
         return points[index].get_y();
     }
-    void move_shape()
+    void move() override
     {
-        set_shape_position(points[0].get_x() + dx, points[0].get_y() + dy);
+        tShape::set_xy(get_point_x(0) + dx, get_point_y(0) + dy);
     }
-    void solve_shape_collision(int size_x, int size_y)
+    bool solve_collision(int size_x, int size_y) override
     {
         for (size_t i = 0; i < n_points; i++)
         {
             if (points[i].solve_collision(size_x, size_y))
             {
-                set_shape_move(points[i].get_dx(), points[i].get_dy());
-                break;
+                set_move(points[i].get_dx(), points[i].get_dy());
+                return 1;
             }
         }
-    }
-    sf::Vector2f rotatePoint(const sf::Vector2f &point, const sf::Vector2f &center, float angle)
-    {
-        angle = angle * (M_PI / 180.f);
-        float s = sin(angle);
-        float c = cos(angle);
-
-        sf::Vector2f translated = point - center;
-
-        float xnew = translated.x * c - translated.y * s;
-        float ynew = translated.x * s + translated.y * c;
-
-        return sf::Vector2f(xnew + center.x, ynew + center.y);
+        return 0;
     }
 
     sf::Vector2f get_center_point()
@@ -252,14 +257,14 @@ public:
         return center /= static_cast<float>(n_points);
     }
 
-    void rotate_shape()
+    void rotate()
     {
         sf::Vector2f center = get_center_point();
 
         for (size_t i = 0; i < n_points; ++i)
         {
-            shape[i].position = rotatePoint(shape[i].position, center, r_angle);
-            points[i].setxy(shape[i].position.x, shape[i].position.y);
+            shape[i].position = rotate_point(shape[i].position, center, r_angle);
+            points[i].set_xy(shape[i].position.x, shape[i].position.y);
         }
     }
 
@@ -271,7 +276,7 @@ public:
 
         for (size_t i = 0; i < n_points; ++i)
         {
-            tmp_points[i] = rotatePoint(shape[i].position, center, r_angle);
+            tmp_points[i] = rotate_point(shape[i].position, center, r_angle);
             if (tmp_points[i].x >= x_size || tmp_points[i].x <= 0 || tmp_points[i].y >= y_size || tmp_points[i].y <= 0)
             {
                 r_angle = -r_angle;
@@ -279,7 +284,7 @@ public:
             }
         }
     }
-    sf::VertexArray get_shape_object()
+    sf::VertexArray get_object() override
     {
         return shape;
     }
@@ -299,6 +304,9 @@ public:
 
 class tRectangle : public tShape
 {
+private:
+    float x_length, y_length;
+
 public:
     tRectangle() : tShape(5)
     {
@@ -315,6 +323,11 @@ public:
         set_shape_point(2, get_point_x(2), get_point_y(2) + length);
         set_shape_point(3, get_point_x(3), get_point_y(3) + length);
     }
+    tRectangle(float init_x_length, float init_y_length) : tShape(5), x_length(init_x_length), y_length(init_y_length)
+    {
+        set_x_length(x_length);
+        set_y_length(y_length);
+    }
 };
 
 class tEllipse : public tShape
@@ -325,7 +338,7 @@ protected:
 
 public:
     tEllipse() : tShape(), a(0), b(0) {}
-    sf::Vector2f rotatePointEllipse(float a, float b, float angle)
+    sf::Vector2f rotate_point_ellipse(float a, float b, float angle)
     {
         angle = angle * (M_PI / 180.f);
         return sf::Vector2f(
@@ -340,14 +353,14 @@ public:
         for (size_t i = 0; i < n_points; i++)
         {
             sf::Vector2f cur_point = sf::Vector2f(get_point_x(i), get_point_y(i));
-            cur_point = rotatePointEllipse(a, b, arc_for_each);
+            cur_point = rotate_point_ellipse(a, b, arc_for_each);
             set_shape_point(i, cur_point.x + center.x, cur_point.y + center.y);
             arc_for_each += arc;
         }
     }
     void set_up_left_position()
     {
-        set_shape_position(2 * a, b);
+        tShape::set_xy(2 * a, b);
     }
     tEllipse(float init_a, float init_b) : tShape(std::max(init_a, init_b) * 8 + 1), a(init_a), b(init_b), arc(360.f / (std::max(init_a, init_b) * 8))
     {
@@ -363,9 +376,9 @@ public:
         arc = 360.f / (n_points - 1);
         calculate_points_position();
     }
-    void set_ellipse_position(float new_x, float new_y)
+    void set_xy(float new_x, float new_y) override
     {
-        set_shape_position(2 * a + new_x, b + new_y);
+        tShape::set_xy(2 * a + new_x, b + new_y);
     }
 };
 
@@ -395,8 +408,8 @@ public:
     void calculate_points()
     {
         set_shape_point(1, get_point_x(0) + length, get_point_y(0));
-        sf::Vector2f point = get_shape_object()[1].position;
-        point = rotatePoint(sf::Vector2f(point.x + length, point.y), point, angle);
+        sf::Vector2f point = get_object()[1].position;
+        point = rotate_point(sf::Vector2f(point.x + length, point.y), point, angle);
         set_shape_point(2, point.x, point.y);
         set_shape_point(3, point.x - length, point.y);
     }
@@ -419,51 +432,71 @@ public:
 
 int main()
 {
-    srand(time(0));
-
     tLine line;
     line.set_shape_point(0, 50, 75);
     line.set_shape_point(1, 100, 175);
-    line.set_shape_move(1, 2);
-    line.set_shape_rotation(1.5);
+    line.set_move(1, 2);
+    line.set_r_angle(1.5);
 
-    tTriangle triangle;
-    triangle.set_shape_color(sf::Color::Magenta);
-    triangle.set_shape_point(0, 0, 0);
-    triangle.set_shape_point(1, 0, 60);
-    triangle.set_shape_point(2, 30, 30);
-    triangle.set_shape_position(50, 70);
-    triangle.set_shape_move(-1, 2);
-    triangle.set_shape_rotation(-1.3);
+    std::vector<tTriangle> triangle(2);
+    triangle[0].set_color(sf::Color::Magenta);
+    triangle[0].set_shape_point(0, 0, 0);
+    triangle[0].set_shape_point(1, 0, 60);
+    triangle[0].set_shape_point(2, 30, 30);
+    triangle[0].set_xy(50, 70);
+    triangle[0].set_move(-1, 2);
+    triangle[0].set_r_angle(-1.3);
+
+    triangle[1].set_color(sf::Color::Magenta);
+    triangle[1].set_shape_point(0, 0, 0);
+    triangle[1].set_shape_point(1, 0, 60);
+    triangle[1].set_shape_point(2, 30, 30);
+    triangle[1].set_xy(50, 70);
+    triangle[1].set_move(1, -2);
+    triangle[1].set_r_angle(-1.3);
 
     tRectangle rectangle;
-    rectangle.set_shape_color(sf::Color::Blue);
     rectangle.set_x_length(45);
     rectangle.set_y_length(35);
-    rectangle.set_shape_move(2, 3);
-    rectangle.set_shape_rotation(1);
-    rectangle.set_shape_position(300, 350);
+    rectangle.set_color(sf::Color::Blue);
+    rectangle.set_move(2, 3);
+    rectangle.set_r_angle(1);
+    rectangle.set_xy(300, 350);
 
-    tRhomb rhomb(90, 60);
-    rhomb.set_shape_color(sf::Color::Red);
-    rhomb.set_shape_move(1, -2);
-    rhomb.set_shape_rotation(-1.7);
-    rhomb.set_shape_position(200, 450);
+    tRhomb rhomb;
+    rhomb.set_length(90);
+    rhomb.set_angle(60);
+    rhomb.set_color(sf::Color::Red);
+    rhomb.set_move(1, -2);
+    rhomb.set_r_angle(-1.7);
+    rhomb.set_xy(200, 450);
 
-    tEllipse ellipse(150.f, 100.f);
-    ellipse.set_shape_color(sf::Color::Yellow);
-    ellipse.set_shape_move(-2, 1);
-    ellipse.set_shape_rotation(-1);
-    ellipse.set_ellipse_position(150, 100);
+    tEllipse ellipse;
+    ellipse.set_ab(150, 100);
+    ellipse.set_color(sf::Color::Yellow);
+    ellipse.set_move(-2, 1);
+    ellipse.set_r_angle(-1);
+    ellipse.set_xy(150, 100);
 
-    tCircle circle(100.f);
-    circle.set_shape_color(sf::Color::Green);
-    circle.set_shape_move(3, -1);
-    circle.set_ellipse_position(50, 80);
+    tCircle circle;
+    circle.set_radius(100);
+    circle.set_color(sf::Color::Green);
+    circle.set_move(3, -1);
+    circle.set_xy(50, 80);
 
     sf::RenderWindow window(sf::VideoMode(x_size, y_size), "ABOBA");
     window.setPosition(sf::Vector2i(300, 300));
     window.setFramerateLimit(60);
+
+    // tShape* shapess[] = {&line, &triangle[0], &triangle[1], &rectangle, &rhomb, &ellipse, &circle};
+    tShape* shapes = new tShape[7];
+    shapes[0] = line;
+    shapes[1] = triangle[0];
+    shapes[2] = triangle[1];
+    shapes[3] = rectangle;
+    shapes[4] = rhomb;
+    shapes[5] = ellipse;
+    shapes[6] = circle;
 
     while (window.isOpen())
     {
@@ -475,40 +508,18 @@ int main()
         }
         window.clear();
 
-        line.solve_shape_collision(x_size, y_size);
-        line.move_shape();
-        line.solve_rotate_collision(x_size, y_size);
-        line.rotate_shape();
+        for(int i = 0; i < 7; i++)
+        {
+            shapes[i].solve_collision(x_size, y_size);
+            shapes[i].move();
+            shapes[i].solve_rotate_collision(x_size, y_size);
+            shapes[i].rotate();
+        }
 
-        triangle.solve_shape_collision(x_size, y_size);
-        triangle.move_shape();
-        triangle.solve_rotate_collision(x_size, y_size);
-        triangle.rotate_shape();
-
-        rectangle.solve_shape_collision(x_size, y_size);
-        rectangle.move_shape();
-        rectangle.solve_rotate_collision(x_size, y_size);
-        rectangle.rotate_shape();
-
-        rhomb.solve_shape_collision(x_size, y_size);
-        rhomb.move_shape();
-        rhomb.solve_rotate_collision(x_size, y_size);
-        rhomb.rotate_shape();
-
-        ellipse.solve_rotate_collision(x_size, y_size);
-        ellipse.rotate_shape();
-        ellipse.solve_shape_collision(x_size, y_size);
-        ellipse.move_shape();
-
-        circle.solve_shape_collision(x_size, y_size);
-        circle.move_shape();
-
-        window.draw(line.get_shape_object());
-        window.draw(triangle.get_shape_object());
-        window.draw(rectangle.get_shape_object());
-        window.draw(rhomb.get_shape_object());
-        window.draw(ellipse.get_shape_object());
-        window.draw(circle.get_shape_object());
+        for(int i = 0; i < 7; i++)
+        {
+            window.draw(shapes[i].get_object());
+        }
 
         window.display();
     }
