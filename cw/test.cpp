@@ -1,19 +1,24 @@
 #include <SFML/Graphics.hpp>
+#include <iostream>
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "SFML Real-Time Viewport Navigation");
+    sf::RenderWindow window(sf::VideoMode(400, 200), "SFML Text Example");
 
-    sf::View view;
-    view.setSize(800.0f, 600.0f);
-    view.setCenter(400.0f, 300.0f);
-    window.setView(view);
+    int number = 42;
+    sf::Font font;
+    if (!font.loadFromFile("arial.ttf")) {
+        std::cerr << "Failed to load font!" << std::endl;
+        return 1;
+    }
 
-    sf::RectangleShape rectangle;
-    rectangle.setSize(sf::Vector2f(100.0f, 100.0f));
-    rectangle.setFillColor(sf::Color::Green);
-    rectangle.setPosition(200.0f, 200.0f);
+    sf::Text text;
+    text.setFont(font);
+    text.setCharacterSize(30);
+    text.setFillColor(sf::Color::White);
+    text.setPosition(50, 80);
 
-    sf::Vector2i lastMousePos;
+    // Преобразование числа в текст
+    text.setString("Number: " + std::to_string(number));
 
     while (window.isOpen()) {
         sf::Event event;
@@ -23,24 +28,8 @@ int main() {
             }
         }
 
-        // Обработка событий мыши
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-            // Получаем текущие координаты мыши
-            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-
-            // Вычисляем разницу между текущим и предыдущим положением мыши
-            sf::Vector2i delta = mousePos - lastMousePos;
-
-            // Перемещаем камеру на эту разницу
-            view.move(-window.mapPixelToCoords(delta));
-            window.setView(view);
-
-            // Обновляем последнее положение мыши
-            lastMousePos = mousePos;
-        }
-
         window.clear();
-        window.draw(rectangle);
+        window.draw(text);
         window.display();
     }
 
