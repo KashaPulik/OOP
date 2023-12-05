@@ -1,0 +1,4 @@
+# add_subdirectory(BST)
+add_subdirectory(line)
+add_subdirectory(BST_graphics)
+add_subdirectory(app)
