@@ -25,6 +25,8 @@ public:
     void draw_tree(sf::RenderWindow& window);
     void change_color(sf::Color color);
     void change_font(std::string font_name);
+    int get_nodes_count();
+    float get_radius();
 
 private:
     void calculate_positions(Node<int>* node, int current_depth);

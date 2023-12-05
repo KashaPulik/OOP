@@ -5,8 +5,8 @@
 #include <SFML/Graphics.hpp>
 
 #include <BST.h>
-#include <line.h>
 #include <BST_graphics.h>
+#include <line.h>
 
 void BST_graphics::insert(int value)
 {
@@ -19,10 +19,11 @@ void BST_graphics::insert(int value)
 void BST_graphics::delete_node(int value)
 {
     BST::delete_node(value);
-    tree_depth = this->depth();
-    nodes_count = this->count();
+    tree_depth = BST::depth();
+    nodes_count = BST::count();
     lines.clear();
-    calculate_positions(root, tree_depth - 1);
+    if (root != nullptr)
+        calculate_positions(root, tree_depth - 1);
 }
 void BST_graphics::set_position(float x, float y)
 {
@@ -109,7 +110,8 @@ void BST_graphics::calculate_positions(Node<int>* node, int current_depth)
         calculate_positions(node->left, current_depth - 1);
     }
 }
-void BST_graphics::recursive_draw_tree(Node<int>* node, sf::RenderWindow& window)
+void BST_graphics::recursive_draw_tree(
+        Node<int>* node, sf::RenderWindow& window)
 {
     window.draw(node->get_CircleShape());
     window.draw(node->key_text);
@@ -133,4 +135,13 @@ void BST_graphics::recursive_change_font(Node<int>* node, std::string font_name)
         recursive_change_font(node->right, font_name);
     if (node->left)
         recursive_change_font(node->left, font_name);
+}
+int BST_graphics::get_nodes_count()
+{
+    return nodes_count;
+}
+
+float BST_graphics::get_radius()
+{
+    return root->getRadius();
 }

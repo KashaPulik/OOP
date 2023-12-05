@@ -272,6 +272,8 @@ void BST<T>::restore_prop(Node<T>* prev, Node<T>* current, int compare_result)
 template <typename T>
 void BST<T>::delete_tree(Node<T>* root)
 {
+    if(root == nullptr)
+        return;
     if (root->right)
         delete_tree(root->right);
     if (root->left)
