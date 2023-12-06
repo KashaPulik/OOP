@@ -10,7 +10,15 @@ int main()
 {
     BST_graphics tree;
 
-    sf::RenderWindow window(sf::VideoMode(x_size, y_size), "BST_graphics");
+    sf::ContextSettings settings;
+
+    settings.antialiasingLevel = 8;
+
+    sf::RenderWindow window(
+            sf::VideoMode(x_size, y_size),
+            "BST_graphics",
+            sf::Style::Default,
+            settings);
     window.setPosition(sf::Vector2i(0, 0));
 
     if (!ImGui::SFML::Init(window)) {
@@ -37,6 +45,31 @@ int main()
             if (event.type == sf::Event::Closed)
                 window.close();
 
+            if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::Enter) {
+                    if (tree.get_nodes_count() == 0) {
+                        tree.insert(input_value);
+                        tree.set_position(
+                                x_size / 2 - tree.get_radius(),
+                                tree.get_radius() * 2);
+                    } else {
+                        tree.insert(input_value);
+                    }
+                    input_value = 0;
+                }
+                if (event.key.code == sf::Keyboard::Delete) {
+                    if (tree.get_nodes_count() != 0) {
+                        tree.delete_node(input_value);
+                        if (tree.get_nodes_count() != 0)
+                            tree.set_position(
+                                    x_size / 2 - tree.get_radius(),
+                                    tree.get_radius() * 2);
+                    }
+                    input_value = 0;
+                }
+                if (event.key.code == sf::Keyboard::Escape)
+                    window.close();
+            }
             if (event.type == sf::Event::MouseButtonPressed)
                 if (event.mouseButton.button == sf::Mouse::Left) {
                     is_dragging = true;
@@ -85,7 +118,8 @@ int main()
         if (add_node_button_pressed) {
             if (tree.get_nodes_count() == 0) {
                 tree.insert(input_value);
-                tree.set_position(x_size / 2 - tree.get_radius(), tree.get_radius() * 2);
+                tree.set_position(
+                        x_size / 2 - tree.get_radius(), tree.get_radius() * 2);
             } else {
                 tree.insert(input_value);
             }
@@ -97,7 +131,9 @@ int main()
             if (tree.get_nodes_count() != 0) {
                 tree.delete_node(input_value);
                 if (tree.get_nodes_count() != 0)
-                    tree.set_position(x_size / 2 - tree.get_radius(), tree.get_radius() * 2);
+                    tree.set_position(
+                            x_size / 2 - tree.get_radius(),
+                            tree.get_radius() * 2);
             }
 
             delete_node_button_pressed = false;

@@ -9,7 +9,7 @@
 #include <BST.h>
 #include <line.h>
 
-class BST_graphics : public BST<int> {
+class BST_graphics : public BST<int>{
 protected:
     std::vector<line> lines;
     int nodes_count;
