@@ -1,7 +1,7 @@
-set(target_name bst_graphics)
+set(target_name bst)
 
 add_library(${target_name} STATIC
-  BST_graphics.cpp
+  BST.cpp
 )
 
 include(CompileOptions)
@@ -14,8 +14,6 @@ target_link_libraries(
   sfml-graphics
   sfml-system
   sfml-window
-  line
-  bst
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
