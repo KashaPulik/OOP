@@ -142,9 +142,9 @@ int main()
 
         window.clear();
 
-        ImGui::SFML::Render(window);
         if (tree.get_nodes_count() != 0)
             tree.draw_tree(window);
+        ImGui::SFML::Render(window);
         window.display();
     }
 
